@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="hi"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Time Limit</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--tx:#f1f5f9;--mut:#94a3b8;--ac:#22c55e;--rd:#ef4444;--s:56}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:system-ui,sans-serif}
+body{padding:env(safe-area-inset-top) 16px 40px;display:flex;flex-direction:column;align-items:center}
+h1{font-size:18px;margin:18px 0 4px}
+p.s{color:var(--mut);font-size:13px;margin:0 0 14px;text-align:center}
+.card{background:var(--card);border-radius:18px;padding:16px;width:100%;max-width:400px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 10px;color:var(--mut);font-weight:600}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0;align-items:center}
+button{border:0;border-radius:12px;padding:11px 14px;font-size:15px;background:#334155;color:var(--tx);cursor:pointer}
+button.p{background:var(--ac);color:#04210f;font-weight:700}
+button.d{background:var(--rd)}
+input[type=number]{width:72px;padding:12px 6px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:var(--tx);font-size:20px;text-align:center}
+input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:var(--tx);font-size:15px}
+.u{font-size:12px;color:var(--mut);display:block;text-align:center}
+select{padding:10px;border-radius:10px;border:1px solid #475569;background:#0f172a;color:var(--tx);font-size:14px;max-width:100%}
+.chip{font-size:12px;padding:4px 10px;border-radius:20px;background:#334155}
+.chip.ok{background:#14532d;color:#86efac}.chip.no{background:#7f1d1d;color:#fecaca}
+/* floating timer */
+#w{position:fixed;z-index:9;left:20px;top:90px;background:#020617;border:2px solid var(--ac);border-radius:.4em;
+ font-size:calc(var(--s)*1px);padding:.18em .3em .3em;text-align:center;touch-action:none;user-select:none;box-shadow:0 8px 30px #000a;min-width:2.4em}
+#w.ring{border-color:var(--rd);animation:b 1s infinite}
+@keyframes b{50%{opacity:.45}}
+#t{font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
+#w.ring #t{color:var(--rd)}
+.wb{display:flex;gap:.12em;justify-content:center;margin-top:.1em}
+.wb button{font-size:max(.3em,14px);padding:.25em .5em;border-radius:.4em}
+#rz{position:absolute;right:2px;bottom:-2px;font-size:max(.35em,22px);cursor:nwse-resize;color:var(--ac);padding:4px;touch-action:none;line-height:1}
+#dot{display:none;position:fixed;top:12px;right:12px;z-index:9;width:40px;height:40px;border-radius:50%;background:var(--ac);padding:0;font-size:18px;opacity:.7}
+body.hid #w{display:none}body.hid #dot{display:block}
+body.hid.ringing #dot{background:var(--rd);opacity:1;animation:b 1s infinite}
+</style></head><body>
+<h1>⏱️ Time Limit</h1>
+<p class="s">Time likho, Allow karo, Start dabao. Time khatam par awaaz aayegi.</p>
+
+<div class="card">
+  <h2>1. Time set karo</h2>
+  <div class="row">
+    <div><input id="h" type="number" min="0" max="23" value="0"><span class="u">ghanta</span></div>
+    <div><input id="m" type="number" min="0" max="59" value="10"><span class="u">minute</span></div>
+    <div><input id="s" type="number" min="0" max="59" value="0"><span class="u">second</span></div>
+  </div>
+  <div class="row" id="pre"><button data-m="5">5m</button><button data-m="10">10m</button><button data-m="15">15m</button><button data-m="30">30m</button></div>
+</div>
+
+<div class="card">
+  <h2>2. Permission / Allow</h2>
+  <div class="row"><span class="chip" id="cn">🔔 Notification: ?</span><span class="chip" id="cv">🔊 Awaaz: ?</span></div>
+  <div class="row"><button class="p" id="allow">✅ Allow karo</button></div>
+  <label class="u" style="margin-top:8px">Time khatam par kya bolna hai:</label>
+  <input type="text" id="msg" value="Time over, time over">
+  <div class="row" style="margin-top:10px"><select id="vm"><option value="tts">🤖 Computer voice use karo</option><option value="rec">🎙 Meri recording use karo</option></select></div>
+  <div class="row"><select id="vs"><option value="">Default awaaz</option></select></div>
+  <div class="row"><select id="vr"><option value="0.7">Dheere</option><option value="0.95" selected>Normal speed</option><option value="1.25">Tez</option></select><select id="vp"><option value="0.6">Bhaari</option><option value="1" selected>Normal</option><option value="1.6">Patli</option></select><button id="vtest">▶ Test</button></div>
+  <div class="row"><button id="rec">🎙 Record karo</button><button id="rplay">▶ Sunao</button><button id="rdel">🗑</button></div>
+  <span class="u" id="rst"></span>
+</div>
+
+<div class="card">
+  <h2>3. Chalao</h2>
+  <div class="row"><button class="p" id="go">▶ Start</button><button id="rs">↺ Reset</button><button id="stop" class="d" style="display:none">🔕 Band karo</button></div>
+  <label class="u" style="margin:6px 0"><input type="checkbox" id="ap" checked> Start dabate hi floating timer kholo (reel ke upar dikhega)</label>
+  <div class="row"><button id="pip">🪟 Dusre app ke upar (PiP)</button><button id="inst">⬇ Install App</button></div>
+  <p class="s" style="margin:8px 0 0">Timer box ko ungli se khiskao. Neeche-right ◢ se bada/chhota karo, ya − + dabao. ✕ se hide.</p>
+</div>
+
+<div id="w">
+  <div id="t">10:00</div>
+  <div class="wb"><button id="go2">▶</button><button id="rs2">↺</button><button id="mn">−</button><button id="pl">+</button><button id="hd">✕</button><button id="sp" class="d" style="display:none">🔕</button></div>
+  <div id="rz">◢</div>
+</div>
+<button id="dot">⏱</button>
+<audio id="al"></audio>
+<video id="pv" muted playsinline style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none"></video>
+<canvas id="cv2" width="320" height="180" style="display:none"></canvas>
+<script>
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+let total=600,left=600,end=0,state='idle',iv=null,wl=null,reg=null,sc=56,voiceOK=false;
+const p2=n=>String(n).padStart(2,'0');
+const fmt=s=>{s=Math.max(0,Math.ceil(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?h+':':'')+p2(m)+':'+p2(s%60)};
+try{const o=JSON.parse(localStorage.tl||'{}');if(o.sc)sc=o.sc;if(o.total){total=left=o.total;$('#h').value=Math.floor(total/3600);$('#m').value=Math.floor(total%3600/60);$('#s').value=total%60}if(o.msg)$('#msg').value=o.msg;['vr','vp','vm'].forEach(k=>{if(o[k])$('#'+k).value=o[k]});window._vs=o.vs||''}catch(e){}
+function save(){try{localStorage.tl=JSON.stringify({sc,total,msg:$('#msg').value,vs:window._vs||'',vr:$('#vr').value,vp:$('#vp').value,vm:$('#vm').value})}catch(e){}}
+function setScale(v){sc=Math.max(22,Math.min(170,v));document.documentElement.style.setProperty('--s',sc);save();keepIn()}
+function keepIn(){const w=$('#w'),r=w.getBoundingClientRect();w.style.left=Math.max(0,Math.min(innerWidth-r.width,r.left))+'px';w.style.top=Math.max(0,Math.min(innerHeight-r.height,r.top))+'px'}
+// time inputs
+function readInputs(){const t=(+$('#h').value||0)*3600+(+$('#m').value||0)*60+(+$('#s').value||0);if(t>0){total=Math.min(t,86399);if(state==='idle'){left=total}save();render()}}
+['h','m','s'].forEach(i=>$('#'+i).oninput=readInputs);
+$$('#pre button').forEach(b=>b.onclick=()=>{$('#h').value=0;$('#m').value=b.dataset.m;$('#s').value=0;readInputs()});
+// alarm sound
+function mkWav(q){const sr=8000,n=sr,d=new Int16Array(n);for(let i=0;i<n;i++){d[i]=q?Math.sin(2*Math.PI*30*i/sr)*120:((i%4000)<2000?Math.sin(2*Math.PI*880*i/sr)*16000:0)}
+const b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+new Int16Array(b,44).set(d);return URL.createObjectURL(new Blob([b],{type:'audio/wav'}))}
+const al=$('#al');al.src=mkWav();
+const ka=new Audio();ka.loop=true;ka.src=mkWav(1); // bahut halki awaaz: app ko background me zinda rakhti hai
+const hasTTS='speechSynthesis'in window;
+function speak(test){if(!test&&state!=='ringing')return;if($('#vm').value==='rec'&&recURL){ra.currentTime=0;ra.play().catch(()=>{});return}if(!hasTTS){al.play().catch(()=>{});return}
+  const u=new SpeechSynthesisUtterance($('#msg').value||'Time over');u.lang='en-IN';u.rate=+$('#vr').value;u.pitch=+$('#vp').value;u.volume=1;const vv=speechSynthesis.getVoices().find(x=>x.voiceURI===window._vs);if(vv){u.voice=vv;u.lang=vv.lang}
+  u.onend=()=>{if(state==='ringing')setTimeout(()=>{al.currentTime=0;al.play().catch(()=>speak())},700)};u.onerror=()=>{};
+  speechSynthesis.cancel();speechSynthesis.speak(u)}
+al.onended=()=>{if(state==='ringing')speak()};
+// permissions
+function chips(){const n='Notification'in window?Notification.permission:'na';
+  const c=$('#cn');c.textContent='🔔 Notification: '+(n==='granted'?'Allowed':n==='denied'?'Blocked':n==='na'?'N/A':'Baaki');c.className='chip '+(n==='granted'?'ok':n==='denied'?'no':'');
+  const v=$('#cv');v.textContent='🔊 Awaaz: '+(voiceOK?'Ready':'Baaki');v.className='chip '+(voiceOK?'ok':'')}
+async function allow(){
+  try{al.volume=0;await al.play();al.pause();al.currentTime=0;al.volume=1;voiceOK=true}catch(e){}
+  try{if(recURL){ra.volume=0;await ra.play();ra.pause();ra.currentTime=0}}catch(e){}ra.volume=1;
+  if(hasTTS){try{const u=new SpeechSynthesisUtterance('Voice ready');u.lang='en-IN';speechSynthesis.speak(u);voiceOK=true}catch(e){}}
+  if('Notification'in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch(e){}}
+  chips()}
+$('#allow').onclick=allow;
+// timer
+function render(){
+  $('#t').textContent=fmt(left);
+  const run=state==='running';$('#go').textContent=run?'⏸ Pause':(state==='paused'?'▶ Resume':'▶ Start');$('#go2').textContent=run?'⏸':'▶';
+  const r=state==='ringing';$('#w').classList.toggle('ring',r);document.body.classList.toggle('ringing',r);
+  $('#stop').style.display=r?'':'none';$('#sp').style.display=r?'':'none';$('#go2').style.display=r?'none':'';
+  document.title=run?fmt(left)+' • Time Limit':'Time Limit';draw()}
+function loop(){left=(end-Date.now())/1000;if(left<=0){left=0;ring()}render()}
+async function start(){
+  if(state==='running'){state='paused';clearInterval(iv);relWL();ka.pause();render();return}
+  if(state==='idle'||state==='ringing')left=total;
+  if($('#ap').checked)openPip(true);
+  ka.play().catch(()=>{});try{navigator.mediaSession.metadata=new MediaMetadata({title:'Time Limit chal raha hai',artist:'Timer'})}catch(e){}
+  if(!voiceOK||('Notification'in window&&Notification.permission==='default'))allow();
+  end=Date.now()+left*1000;state='running';clearInterval(iv);iv=setInterval(loop,250);try{wl=await navigator.wakeLock.request('screen')}catch(e){}render()}
+function relWL(){try{wl&&wl.release()}catch(e){}wl=null}
+function ring(){
+  clearInterval(iv);state='ringing';relWL();render();
+  if(navigator.vibrate)navigator.vibrate([500,200,500,200,500,200,500]);
+  if('Notification'in window&&Notification.permission==='granted'){const o={body:$('#msg').value||'Time over',requireInteraction:true,tag:'tl'};try{reg?reg.showNotification('⏰ Time Up!',o):new Notification('⏰ Time Up!',o)}catch(e){}}
+  al.currentTime=0;al.volume=1;al.play().catch(()=>speak())}
+function stopAlarm(){state='idle';ka.pause();ra.pause();al.pause();al.currentTime=0;if(hasTTS)speechSynthesis.cancel();navigator.vibrate&&navigator.vibrate(0);left=total;render()}
+function reset(){state==='ringing'?stopAlarm():(clearInterval(iv),relWL(),ka.pause(),state='idle',left=total,render())}
+$('#go').onclick=$('#go2').onclick=start;$('#rs').onclick=$('#rs2').onclick=reset;$('#stop').onclick=$('#sp').onclick=stopAlarm;
+$('#msg').oninput=save;
+// widget: drag, resize, hide
+const w=$('#w');let dr=null;
+w.addEventListener('pointerdown',e=>{if(e.target.closest('button')||e.target.id==='rz')return;const r=w.getBoundingClientRect();dr={x:e.clientX-r.left,y:e.clientY-r.top};w.setPointerCapture(e.pointerId)});
+w.addEventListener('pointermove',e=>{if(!dr)return;w.style.left=(e.clientX-dr.x)+'px';w.style.top=(e.clientY-dr.y)+'px'});
+w.addEventListener('pointerup',()=>{dr=null;keepIn()});
+const rz=$('#rz');let rs=null;
+rz.addEventListener('pointerdown',e=>{rs={x:e.clientX,y:e.clientY,s:sc};rz.setPointerCapture(e.pointerId);e.stopPropagation()});
+rz.addEventListener('pointermove',e=>{if(rs)setScale(rs.s+((e.clientX-rs.x)+(e.clientY-rs.y))/3)});
+rz.addEventListener('pointerup',()=>rs=null);
+$('#pl').onclick=()=>setScale(sc+10);$('#mn').onclick=()=>setScale(sc-10);
+$('#hd').onclick=()=>document.body.classList.add('hid');$('#dot').onclick=()=>document.body.classList.remove('hid');
+// PiP
+const cv=$('#cv2'),cx=cv.getContext('2d');
+function draw(){cx.fillStyle='#020617';cx.fillRect(0,0,320,180);const r=state==='ringing';cx.fillStyle=r?'#ef4444':'#f1f5f9';cx.font='bold 70px system-ui';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(fmt(left),160,90)}
+$('#pip').onclick=()=>openPip();
+async function openPip(auto){try{
+  if(window.documentPictureInPicture){const pw=await documentPictureInPicture.requestWindow({width:240,height:120});
+    const st=pw.document.createElement('style');st.textContent='body{margin:0;background:#020617;color:#f1f5f9;font:700 48px system-ui;display:flex;align-items:center;justify-content:center;height:100vh}';pw.document.head.append(st);
+    const d=pw.document.createElement('div');pw.document.body.append(d);const u=()=>{d.textContent=fmt(left);d.style.color=state==='ringing'?'#ef4444':''};u();const t=setInterval(u,300);pw.addEventListener('pagehide',()=>clearInterval(t))}
+  else{const v=$('#pv');if(!v.srcObject)v.srcObject=cv.captureStream(10);await v.play();await v.requestPictureInPicture()}
+}catch(e){if(!auto)alert('Is browser me floating window supported nahi hai.')}};
+// voices + own recording
+function loadVoices(){if(!hasTTS)return;const vs=speechSynthesis.getVoices();if(!vs.length)return;const pr=v=>/^(hi|en-IN)/i.test(v.lang)?0:/^en/i.test(v.lang)?1:2;
+ $('#vs').innerHTML='<option value="">Default awaaz</option>'+vs.slice().sort((a,b)=>pr(a)-pr(b)).map(v=>`<option value="${v.voiceURI}">${v.name} (${v.lang})</option>`).join('');$('#vs').value=window._vs||''}
+if(hasTTS){speechSynthesis.onvoiceschanged=loadVoices;loadVoices()}
+$('#vs').onchange=()=>{window._vs=$('#vs').value;save()};['vr','vp','vm'].forEach(k=>$('#'+k).onchange=save);
+const ra=new Audio();let recURL='',mr=null,chunks=[],rt=null;
+try{recURL=localStorage.tlrec||''}catch(e){}if(recURL)ra.src=recURL;
+ra.onended=()=>{if(state==='ringing')setTimeout(()=>{al.currentTime=0;al.play().catch(()=>speak())},700)};
+function recUI(){$('#rst').textContent=recURL?'✅ Aapki awaaz save hai':'Abhi koi recording nahi'}
+$('#rec').onclick=async()=>{
+ if(mr&&mr.state==='recording'){mr.stop();return}
+ try{const st=await navigator.mediaDevices.getUserMedia({audio:true});chunks=[];mr=new MediaRecorder(st);
+  mr.ondataavailable=e=>chunks.push(e.data);
+  mr.onstop=()=>{clearTimeout(rt);st.getTracks().forEach(t=>t.stop());$('#rec').textContent='🎙 Record karo';
+   const fr=new FileReader();fr.onload=()=>{recURL=fr.result;ra.src=recURL;try{localStorage.tlrec=recURL}catch(e){alert('Recording save nahi hui, chhoti rakho.')}$('#vm').value='rec';save();recUI()};fr.readAsDataURL(new Blob(chunks,{type:mr.mimeType}))};
+  mr.start();$('#rec').textContent='⏹ Rok do';$('#rst').textContent='🔴 Record ho raha hai... (max 15 sec)';rt=setTimeout(()=>mr.state==='recording'&&mr.stop(),15000)
+ }catch(e){alert('Mic permission nahi mili. Allow karo.')}};
+$('#rplay').onclick=()=>{if(recURL){ra.currentTime=0;ra.play()}else alert('Pehle record karo.')};
+$('#rdel').onclick=()=>{recURL='';ra.removeAttribute('src');try{localStorage.removeItem('tlrec')}catch(e){}$('#vm').value='tts';save();recUI()};
+$('#vtest').onclick=()=>speak(true);
+recUI();
+// install + SW
+let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('#inst').style.display=''});
+$('#inst').onclick=async()=>{if(dp){const e=dp;dp=null;e.prompt();const c=await e.userChoice;if(c.outcome==='accepted')alert('✅ Install ho gaya! Home screen ya app list me "Time Limit" icon dekho.')}else alert('Chrome menu (⋮) kholo → "Install app" ya "Add to Home screen" dabao. (Ye sirf HTTPS hosting par chalta hai)')};
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').then(r=>reg=r).catch(()=>{});
+document.addEventListener('visibilitychange',()=>{if(state==='running')loop()});
+addEventListener('resize',keepIn);
+document.documentElement.style.setProperty('--s',sc);
+w.style.left=Math.max(10,innerWidth-200)+'px';
+chips();render();setTimeout(keepIn,50);
+</script></body></html>
